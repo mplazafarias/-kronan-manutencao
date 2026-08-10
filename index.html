@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KRONAN | Controle de Manutenção</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --teal:#51C8C5; --teal-dark:#3aa9a6; --black:#000000;
+    --cream:#EFE9CF; --grey:#F2F2F2; --lilac:#CCB8C8;
+    --bg:#0b0d0d; --panel:#151717; --panel2:#1d2020; --border:#2c3030;
+    --text:#f2f2f2; --muted:#9aa3a3; --danger:#e5484d; --warn:#e0a83e; --ok:#4fae8a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Montserrat',Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;}
+  header{padding:18px 24px;background:#000;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:20;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .logo{font-weight:800;font-size:1.5rem;letter-spacing:.06em;color:var(--teal);}
+  .brand .sub{font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;border-left:1px solid var(--border);padding-left:10px;}
+  nav{display:flex;gap:8px;flex-wrap:wrap;}
+  nav button{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:600;font-family:inherit;}
+  nav button.active{background:var(--teal);border-color:var(--teal);color:#03211f;}
+  main{max-width:1100px;margin:0 auto;padding:20px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+  .card h2{margin-top:0;font-size:1rem;font-weight:700;border-bottom:1px solid var(--border);padding-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:.02em;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  @media(max-width:700px){.grid,.grid3{grid-template-columns:1fr;}}
+  label{display:block;margin-bottom:6px;font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.02em;}
+  input,select,textarea{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:.92rem;font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);}
+  textarea{resize:vertical;min-height:70px;}
+  .field{margin-bottom:12px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{background:var(--teal);color:#03211f;border:none;padding:12px 20px;border-radius:10px;cursor:pointer;font-size:.88rem;font-weight:700;font-family:inherit;}
+  .btn.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text);}
+  .btn.danger{background:var(--danger);color:#fff;}
+  .btn.dark{background:var(--black);color:var(--teal);border:1px solid var(--teal);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .status-options{display:flex;gap:10px;flex-wrap:wrap;}
+  .status-chip{border:1px solid var(--border);border-radius:10px;padding:11px 15px;cursor:pointer;font-size:.85rem;background:var(--panel2);user-select:none;font-weight:600;}
+  .status-chip.selected{border-color:var(--teal);background:rgba(81,200,197,.18);color:var(--teal);}
+  .status-chip.selected[data-value="mal_uso"]{border-color:var(--danger);background:rgba(229,72,77,.18);color:#ff8f92;}
+  .status-chip.selected[data-value="sem_avaria"]{border-color:var(--ok);background:rgba(79,174,138,.18);color:#7fd6b3;}
+  .status-chip.selected[data-value="garantia"]{border-color:var(--warn);background:rgba(224,168,62,.18);color:#f2c369;}
+  .photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:12px;}
+  .photo-thumb{position:relative;border-radius:9px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1;}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-thumb button{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;}
+  .upload-box{border:2px dashed var(--border);border-radius:12px;padding:26px 20px;text-align:center;cursor:pointer;color:var(--muted);font-weight:600;font-size:.88rem;}
+  .upload-box:hover{border-color:var(--teal);color:var(--text);}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;}
+  th{color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;}
+  tr:hover{background:rgba(255,255,255,.02);}
+  .badge{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;}
+  .badge.pendente{background:rgba(224,168,62,.2);color:#f2c369;}
+  .badge.andamento{background:rgba(81,200,197,.2);color:var(--teal);}
+  .badge.concluida{background:rgba(79,174,138,.2);color:#7fd6b3;}
+  .badge.mal_uso{background:rgba(229,72,77,.2);color:#ff8f92;}
+  .badge.sem_avaria{background:rgba(79,174,138,.2);color:#7fd6b3;}
+  .badge.defeito_tecnico{background:rgba(204,184,200,.2);color:var(--lilac);}
+  .badge.desgaste_natural{background:rgba(242,242,242,.15);color:var(--grey);}
+  .badge.garantia{background:rgba(224,168,62,.2);color:#f2c369;}
+  .empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:.9rem;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .search{max-width:280px;}
+  .actions-cell{display:flex;gap:6px;}
+  .actions-cell button{padding:6px 10px;font-size:.72rem;border-radius:7px;}
+  .hidden{display:none !important;}
+  .view-detail .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:700px){.view-detail .grid2{grid-template-columns:1fr;}}
+  .kv{margin-bottom:10px;}
+  .kv b{color:var(--muted);display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
+  footer{text-align:center;padding:24px;color:var(--muted);font-size:.75rem;}
+  .sig-preview{max-width:100%;background:#fff;border-radius:8px;border:1px solid var(--border);}
+  .code-tag{display:inline-block;background:var(--panel2);border:1px solid var(--teal);color:var(--teal);padding:2px 10px;border-radius:6px;font-weight:700;font-size:.85rem;letter-spacing:.03em;}
+  .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+  @media(max-width:700px){.stat-cards{grid-template-columns:repeat(2,1fr);}}
+  .stat-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+  .stat-card .num{font-size:1.6rem;font-weight:800;color:var(--teal);}
+  .stat-card .lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+
+  /* Print layout */
+  @media print{
+    header, nav, footer, .toolbar, .actions-cell, #view-list, #view-new, .no-print{display:none !important;}
+    body{background:#fff;color:#000;}
+    main{max-width:100%;padding:0;margin:0;}
+    .card{background:#fff;border:none;box-shadow:none;padding:0;margin:0;}
+    .card h2{color:#000;border-bottom:2px solid #51C8C5;}
+    .kv b{color:#555;}
+    .badge{border:1px solid #000;color:#000 !important;background:#fff !important;}
+    .print-header{display:flex !important;align-items:center;justify-content:space-between;border-bottom:3px solid #51C8C5;padding-bottom:10px;margin-bottom:16px;}
+    .print-header .plogo{color:#000;font-weight:800;font-size:1.4rem;letter-spacing:.06em;}
+    .sig-preview{border:1px solid #000;}
+    .photo-thumb{border:1px solid #000;break-inside:avoid;}
+  }
+  .print-header{display:none;}
+
+  /* Signature capture blocks */
+  .sig-capture{border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--panel2);text-align:center;}
+  .sig-capture .sig-status{font-size:.8rem;color:var(--muted);margin-bottom:10px;}
+  .sig-capture .sig-status.done{color:var(--ok);font-weight:700;}
+  .sig-mini{width:100%;max-height:90px;object-fit:contain;background:#fff;border-radius:8px;margin-bottom:10px;display:none;}
+  .sig-mini.show{display:block;}
+
+  /* Fullscreen signature modal - optimized for phone/tablet */
+  .sig-modal{position:fixed;inset:0;background:#000;z-index:100;display:flex;flex-direction:column;}
+  .sig-modal.hidden{display:none;}
+  .sig-modal-header{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;background:#000;border-bottom:1px solid var(--border);}
+  .sig-modal-header .title{font-weight:700;color:var(--teal);font-size:1rem;}
+  .sig-modal-header .hint{font-size:.72rem;color:var(--muted);margin-top:2px;}
+  .sig-modal-close{background:var(--panel2);border:1px solid var(--border);color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;}
+  .sig-canvas-wrap{flex:1;background:#fff;position:relative;touch-action:none;}
+  #sigModalCanvas{width:100%;height:100%;display:block;touch-action:none;}
+  .sig-modal-footer{padding:14px 18px;display:flex;gap:10px;justify-content:space-between;background:#000;border-top:1px solid var(--border);}
+  .sig-modal-footer .btn{flex:1;padding:15px;font-size:.95rem;}
+  .rotate-hint{position:absolute;top:10px;left:0;right:0;text-align:center;color:#999;font-size:.72rem;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="logo">KRONAN</span>
+    <span class="sub">Controle de<br>Manutenção</span>
+  </div>
+  <nav>
+    <button data-view="list" class="navbtn active">📋 Solicitações</button>
+    <button data-view="new" class="navbtn">➕ Nova Solicitação</button>
+    <button data-view="banco" class="navbtn">🗄️ Banco de Manutenção</button>
+    <button id="installBtn" class="hidden" style="background:var(--teal);border-color:var(--teal);color:#03211f;padding:10px 16px;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:700;font-family:inherit;border:none;">⬇️ Instalar App</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- LISTA -->
+  <section id="view-list">
+    <div class="toolbar">
+      <input class="search" id="searchInput" placeholder="🔍 Buscar por equipamento, local, código...">
+      <select id="filterStatus" style="max-width:200px;">
+        <option value="">Todos os status</option>
+        <option value="pendente">Pendente</option>
+        <option value="andamento">Em andamento</option>
+        <option value="concluida">Concluída</option>
+      </select>
+    </div>
+    <div class="card">
+      <table id="listTable">
+        <thead>
+          <tr><th>Nº</th><th>Equipamento/Local</th><th>Solicitante</th><th>Data</th><th>Status</th><th>Diagnóstico</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div id="emptyMsg" class="empty hidden">Nenhuma solicitação cadastrada ainda. Clique em "Nova Solicitação".</div>
+    </div>
+  </section>
+
+  <!-- FORM NOVA/EDIÇÃO -->
+  <section id="view-new" class="hidden">
+    <div class="card">
+      <h2>📝 Dados da Solicitação</h2>
+      <div class="grid3">
+        <div class="field"><label>Número</label><input id="f_codigo" readonly></div>
+        <div class="field"><label>Data da solicitação</label><input id="f_data" type="date"></div>
+        <div class="field"><label>Prioridade</label>
+          <select id="f_prioridade"><option>Baixa</option><option selected>Média</option><option>Alta</option><option>Urgente</option></select>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>Equipamento / Local</label><input id="f_equipamento" placeholder="Ex: Ar-condicionado - Sala 203"></div>
+        <div class="field"><label>Setor / Departamento</label><input id="f_setor" placeholder="Ex: Manutenção Predial"></div>
+      </div>
+      <div class="field"><label>Descrição do problema relatado</label><textarea id="f_descricao" placeholder="Descreva o problema identificado pelo solicitante..."></textarea></div>
+
+      <h2>👤 Solicitante</h2>
+      <div class="grid">
+        <div class="field"><label>Nome do solicitante</label><input id="f_solicitante_nome"></div>
+        <div class="field"><label>Contato/Ramal</label><input id="f_solicitante_contato"></div>
+      </div>
+
+      <h2>🔧 Execução da Manutenção</h2>
+      <div class="grid">
+        <div class="field"><label>Responsável pela manutenção</label><input id="f_tecnico_nome"></div>
+        <div class="field"><label>Data de execução</label><input id="f_data_execucao" type="date"></div>
+      </div>
+      <div class="field"><label>Serviço realizado / Diagnóstico técnico</label><textarea id="f_servico" placeholder="Descreva o que foi encontrado e o serviço executado..."></textarea></div>
+      <div class="field"><label>Peças/materiais utilizados</label><textarea id="f_materiais" placeholder="Opcional"></textarea></div>
+
+      <h2>✅ Classificação da Ocorrência</h2>
+      <div class="status-options" id="statusOptions">
+        <div class="status-chip" data-value="mal_uso">⚠️ Mal uso</div>
+        <div class="status-chip" data-value="sem_avaria">✅ Sem avaria identificada</div>
+        <div class="status-chip" data-value="defeito_tecnico">🔩 Defeito técnico</div>
+        <div class="status-chip" data-value="desgaste_natural">⏳ Desgaste natural</div>
+        <div class="status-chip" data-value="garantia">🛡️ Garantia acionada</div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Status da solicitação</label>
+        <select id="f_status">
+          <option value="pendente">Pendente</option>
+          <option value="andamento">Em andamento</option>
+          <option value="concluida">Concluída</option>
+        </select>
+      </div>
+
+      <h2>📷 Fotos</h2>
+      <div class="upload-box" id="uploadBox">📸 Toque para tirar foto ou escolher da galeria (antes/depois do reparo)</div>
+      <input type="file" id="photoInput" accept="image/*" multiple capture="environment" class="hidden">
+      <div class="photos-grid" id="photosGrid"></div>
+
+      <h2>✍️ Assinaturas</h2>
+      <div class="grid">
+        <div class="sig-capture">
+          <div class="sig-status" id="sigStatusSolicitante">Aguardando assinatura</div>
+          <img class="sig-mini" id="sigMiniSolicitante">
+          <button type="button" class="btn dark" style="width:100%;" onclick="openSigModal('solicitante')">✍️ Assinar (Solicitante)</button>
+        </div>
+        <div class="sig-capture">
+          <div class="sig-status" id="sigStatusTecnico">Aguardando assinatura</div>
+          <img class="sig-mini" id="sigMiniTecnico">
+          <button type="button" class="btn dark" style="width:100%;" onclick="openSigModal('tecnico')">✍️ Assinar (Responsável)</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:20px;">
+        <button class="btn" id="saveBtn">💾 Salvar Solicitação</button>
+        <button class="btn secondary" id="cancelBtn">Cancelar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DETALHE / RELATÓRIO -->
+  <section id="view-detail" class="hidden">
+    <div class="print-header">
+      <span class="plogo">KRONAN</span>
+      <span>Relatório de Manutenção</span>
+    </div>
+    <div class="card view-detail" id="detailContent"></div>
+  </section>
+
+  <!-- BANCO DE MANUTENÇÃO -->
+  <section id="view-banco" class="hidden">
+    <div class="stat-cards" id="statCards"></div>
+    <div class="toolbar">
+      <input class="search" id="bancoSearch" placeholder="🔍 Buscar em todo o histórico...">
+      <div class="row">
+        <select id="bancoFilterClass" style="max-width:220px;">
+          <option value="">Todas as classificações</option>
+          <option value="mal_uso">⚠️ Mal uso</option>
+          <option value="sem_avaria">✅ Sem avaria identificada</option>
+          <option value="defeito_tecnico">🔩 Defeito técnico</option>
+          <option value="desgaste_natural">⏳ Desgaste natural</option>
+          <option value="garantia">🛡️ Garantia acionada</option>
+        </select>
+        <button class="btn secondary" id="exportCsvBtn">⬇️ Exportar CSV (Excel)</button>
+      </div>
+    </div>
+    <div class="card">
+      <table id="bancoTable">
+        <thead>
+          <tr><th>Nº</th><th>Data</th><th>Equipamento/Local</th><th>Setor</th><th>Solicitante</th><th>Responsável</th><th>Status</th><th>Classificação</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="bancoBody"></tbody>
+      </table>
+      <div id="bancoEmpty" class="empty hidden">Nenhum registro no banco de manutenção ainda.</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>KRONAN — Projetada para amar. Construída para durar. Dados salvos localmente neste dispositivo.</footer>
+
+<!-- Fullscreen signature modal -->
+<div class="sig-modal hidden" id="sigModal">
+  <div class="sig-modal-header">
+    <div>
+      <div class="title" id="sigModalTitle">Assinatura</div>
+      <div class="hint">Assine com o dedo ou caneta</div>
+    </div>
+    <button class="sig-modal-close" onclick="closeSigModal(false)">✕</button>
+  </div>
+  <div class="sig-canvas-wrap">
+    <canvas id="sigModalCanvas"></canvas>
+  </div>
+  <div class="sig-modal-footer">
+    <button class="btn secondary" onclick="clearSigModal()">🗑️ Limpar</button>
+    <button class="btn" onclick="closeSigModal(true)">✓ Confirmar</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'kronan_manutencao_registros_v1';
+const COUNTER_KEY = 'kronan_manutencao_contador_v1';
+let registros = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let currentEditId = null;
+let currentPhotos = [];
+let selectedStatusChip = null;
+let sigSolicitanteData = null;
+let sigTecnicoData = null;
+let sigModalTarget = null;
+let currentCodigo = null;
+
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(registros)); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){ if(!d) return '-'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+
+// ---------- Sequential numbering: 0001/2026 ----------
+function nextCodigo(){
+  const year = new Date().getFullYear();
+  let counters = JSON.parse(localStorage.getItem(COUNTER_KEY) || '{}');
+  const n = (counters[year] || 0) + 1;
+  counters[year] = n;
+  localStorage.setItem(COUNTER_KEY, JSON.stringify(counters));
+  return String(n).padStart(4,'0') + '/' + year;
+}
+
+// ---------- Navigation ----------
+function showView(name){
+  document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('view-'+name).classList.remove('hidden');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+  const map = {list:0,new:1,banco:2};
+  if(map[name]!==undefined) document.querySelectorAll('.navbtn')[map[name]].classList.add('active');
+}
+document.querySelectorAll('.navbtn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const v = b.dataset.view;
+    if(v==='new') resetForm();
+    if(v==='banco') renderBanco();
+    showView(v);
+  });
+});
+document.getElementById('cancelBtn').addEventListener('click', ()=>{ showView('list'); renderList(); });
+
+// ---------- Status chips ----------
+document.querySelectorAll('.status-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('.status-chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected');
+    selectedStatusChip = chip.dataset.value;
+  });
+});
+
+// ---------- Photos ----------
+const uploadBox = document.getElementById('uploadBox');
+const photoInput = document.getElementById('photoInput');
+uploadBox.addEventListener('click', ()=>photoInput.click());
+photoInput.addEventListener('change', e=>handleFiles(e.target.files));
+uploadBox.addEventListener('dragover', e=>{e.preventDefault(); uploadBox.style.borderColor='var(--teal)';});
+uploadBox.addEventListener('dragleave', ()=>uploadBox.style.borderColor='var(--border)');
+uploadBox.addEventListener('drop', e=>{
+  e.preventDefault(); uploadBox.style.borderColor='var(--border)';
+  handleFiles(e.dataTransfer.files);
+});
+function handleFiles(files){
+  [...files].forEach(file=>{
+    if(!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      currentPhotos.push({data: ev.target.result, caption:'', ts: new Date().toISOString()});
+      renderPhotos();
+    };
+    reader.readAsDataURL(file);
+  });
+  photoInput.value='';
+}
+function renderPhotos(){
+  const grid = document.getElementById('photosGrid');
+  grid.innerHTML='';
+  currentPhotos.forEach((p,i)=>{
+    const div = document.createElement('div');
+    div.className='photo-thumb';
+    div.innerHTML = `<img src="${p.data}"><button onclick="removePhoto(${i})">✕</button>`;
+    grid.appendChild(div);
+  });
+}
+function removePhoto(i){ currentPhotos.splice(i,1); renderPhotos(); }
+
+// ---------- Fullscreen signature modal (mobile/tablet optimized) ----------
+const sigModal = document.getElementById('sigModal');
+const sigModalCanvas = document.getElementById('sigModalCanvas');
+const sigCtx = sigModalCanvas.getContext('2d');
+let sigDrawing = false, sigLast = null;
+
+function sizeModalCanvas(){
+  const ratio = window.devicePixelRatio || 1;
+  const wrap = sigModalCanvas.parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  sigModalCanvas.width = w*ratio; sigModalCanvas.height = h*ratio;
+  sigModalCanvas.style.width = w+'px'; sigModalCanvas.style.height = h+'px';
+  sigCtx.scale(ratio,ratio);
+  sigCtx.lineWidth = 3; sigCtx.lineCap='round'; sigCtx.lineJoin='round'; sigCtx.strokeStyle='#111';
+}
+function sigPos(e){
+  const rect = sigModalCanvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return {x: t.clientX-rect.left, y: t.clientY-rect.top};
+}
+function sigStart(e){ sigDrawing=true; sigLast=sigPos(e); e.preventDefault(); }
+function sigMove(e){
+  if(!sigDrawing) return;
+  const p = sigPos(e);
+  sigCtx.beginPath(); sigCtx.moveTo(sigLast.x,sigLast.y); sigCtx.lineTo(p.x,p.y); sigCtx.stroke();
+  sigLast = p; e.preventDefault();
+}
+function sigEnd(){ sigDrawing=false; }
+sigModalCanvas.addEventListener('mousedown', sigStart);
+sigModalCanvas.addEventListener('mousemove', sigMove);
+window.addEventListener('mouseup', sigEnd);
+sigModalCanvas.addEventListener('touchstart', sigStart, {passive:false});
+sigModalCanvas.addEventListener('touchmove', sigMove, {passive:false});
+sigModalCanvas.addEventListener('touchend', sigEnd, {passive:false});
+
+function openSigModal(target){
+  sigModalTarget = target;
+  document.getElementById('sigModalTitle').textContent =
+    target==='solicitante' ? 'Assinatura do Solicitante' : 'Assinatura do Responsável pela Manutenção';
+  sigModal.classList.remove('hidden');
+  requestAnimationFrame(()=>{
+    sizeModalCanvas();
+    sigCtx.clearRect(0,0,sigModalCanvas.width,sigModalCanvas.height);
+    const existing = target==='solicitante' ? sigSolicitanteData : sigTecnicoData;
+    if(existing){
+      const img = new Image();
+      img.onload = ()=> sigCtx.drawImage(img,0,0,sigModalCanvas.clientWidth,sigModalCanvas.clientHeight);
+      img.src = existing;
+    }
+  });
+}
+function clearSigModal(){ sigCtx.clearRect(0,0,sigModalCanvas.width,sigModalCanvas.height); }
+function isSigModalEmpty(){
+  const data = sigCtx.getImageData(0,0,sigModalCanvas.width,sigModalCanvas.height).data;
+  return !data.some((v,i)=> i%4===3 && v!==0);
+}
+function closeSigModal(confirmSave){
+  if(confirmSave){
+    const dataUrl = isSigModalEmpty() ? null : sigModalCanvas.toDataURL('image/png');
+    if(sigModalTarget==='solicitante'){
+      sigSolicitanteData = dataUrl;
+      updateSigDisplay('Solicitante', sigSolicitanteData);
+    } else {
+      sigTecnicoData = dataUrl;
+      updateSigDisplay('Tecnico', sigTecnicoData);
+    }
+  }
+  sigModal.classList.add('hidden');
+  sigModalTarget = null;
+}
+function updateSigDisplay(who, dataUrl){
+  const status = document.getElementById('sigStatus'+who);
+  const mini = document.getElementById('sigMini'+who);
+  if(dataUrl){
+    status.textContent = '✓ Assinatura registrada'; status.classList.add('done');
+    mini.src = dataUrl; mini.classList.add('show');
+  } else {
+    status.textContent = 'Aguardando assinatura'; status.classList.remove('done');
+    mini.classList.remove('show'); mini.src='';
+  }
+}
+window.addEventListener('resize', ()=>{ if(!sigModal.classList.contains('hidden')) sizeModalCanvas(); });
+
+// ---------- Form reset / load ----------
+function resetForm(){
+  currentEditId = null;
+  currentPhotos = [];
+  selectedStatusChip = null;
+  sigSolicitanteData = null;
+  sigTecnicoData = null;
+  currentCodigo = nextCodigo();
+  document.getElementById('f_codigo').value = currentCodigo;
+  document.getElementById('f_data').value = todayISO();
+  document.getElementById('f_data_execucao').value = '';
+  document.getElementById('f_prioridade').value = 'Média';
+  document.getElementById('f_equipamento').value='';
+  document.getElementById('f_setor').value='';
+  document.getElementById('f_descricao').value='';
+  document.getElementById('f_solicitante_nome').value='';
+  document.getElementById('f_solicitante_contato').value='';
+  document.getElementById('f_tecnico_nome').value='';
+  document.getElementById('f_servico').value='';
+  document.getElementById('f_materiais').value='';
+  document.getElementById('f_status').value='pendente';
+  document.querySelectorAll('.status-chip').forEach(c=>c.classList.remove('selected'));
+  renderPhotos();
+  updateSigDisplay('Solicitante', null);
+  updateSigDisplay('Tecnico', null);
+}
+
+function loadForm(reg){
+  currentEditId = reg.id;
+  currentCodigo = reg.codigo;
+  currentPhotos = JSON.parse(JSON.stringify(reg.fotos||[]));
+  selectedStatusChip = reg.classificacao || null;
+  sigSolicitanteData = reg.assinaturaSolicitante || null;
+  sigTecnicoData = reg.assinaturaTecnico || null;
+  document.getElementById('f_codigo').value = reg.codigo;
+  document.getElementById('f_data').value = reg.data;
+  document.getElementById('f_data_execucao').value = reg.dataExecucao||'';
+  document.getElementById('f_prioridade').value = reg.prioridade;
+  document.getElementById('f_equipamento').value = reg.equipamento;
+  document.getElementById('f_setor').value = reg.setor;
+  document.getElementById('f_descricao').value = reg.descricao;
+  document.getElementById('f_solicitante_nome').value = reg.solicitanteNome;
+  document.getElementById('f_solicitante_contato').value = reg.solicitanteContato;
+  document.getElementById('f_tecnico_nome').value = reg.tecnicoNome;
+  document.getElementById('f_servico').value = reg.servico;
+  document.getElementById('f_materiais').value = reg.materiais;
+  document.getElementById('f_status').value = reg.status;
+  document.querySelectorAll('.status-chip').forEach(c=>{
+    c.classList.toggle('selected', c.dataset.value===selectedStatusChip);
+  });
+  renderPhotos();
+  updateSigDisplay('Solicitante', sigSolicitanteData);
+  updateSigDisplay('Tecnico', sigTecnicoData);
+}
+
+// ---------- Save ----------
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const equipamento = document.getElementById('f_equipamento').value.trim();
+  const solicitanteNome = document.getElementById('f_solicitante_nome').value.trim();
+  if(!equipamento){ alert('Informe o Equipamento/Local.'); return; }
+  if(!solicitanteNome){ alert('Informe o nome do solicitante.'); return; }
+
+  const reg = {
+    id: currentEditId || currentCodigo,
+    codigo: currentCodigo,
+    data: document.getElementById('f_data').value,
+    dataExecucao: document.getElementById('f_data_execucao').value,
+    prioridade: document.getElementById('f_prioridade').value,
+    equipamento,
+    setor: document.getElementById('f_setor').value.trim(),
+    descricao: document.getElementById('f_descricao').value.trim(),
+    solicitanteNome,
+    solicitanteContato: document.getElementById('f_solicitante_contato').value.trim(),
+    tecnicoNome: document.getElementById('f_tecnico_nome').value.trim(),
+    servico: document.getElementById('f_servico').value.trim(),
+    materiais: document.getElementById('f_materiais').value.trim(),
+    status: document.getElementById('f_status').value,
+    classificacao: selectedStatusChip,
+    fotos: currentPhotos,
+    assinaturaSolicitante: sigSolicitanteData,
+    assinaturaTecnico: sigTecnicoData,
+    criadoEm: currentEditId ? (registros.find(r=>r.id===currentEditId)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
+    atualizadoEm: new Date().toISOString()
+  };
+
+  if(currentEditId){
+    const idx = registros.findIndex(r=>r.id===currentEditId);
+    registros[idx] = reg;
+  } else {
+    registros.unshift(reg);
+  }
+  save();
+  showView('list');
+  renderList();
+});
+
+// ---------- List ----------
+function statusLabel(s){ return {pendente:'Pendente',andamento:'Em andamento',concluida:'Concluída'}[s]||s; }
+function classLabel(c){
+  return {
+    mal_uso:'⚠️ Mal uso', sem_avaria:'✅ Sem avaria', defeito_tecnico:'🔩 Defeito técnico',
+    desgaste_natural:'⏳ Desgaste natural', garantia:'🛡️ Garantia'
+  }[c] || '-';
+}
+function renderList(){
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filterStatus = document.getElementById('filterStatus').value;
+  let list = registros.filter(r=>{
+    const matchSearch = !search || (r.equipamento+r.setor+r.codigo+r.solicitanteNome).toLowerCase().includes(search);
+    const matchStatus = !filterStatus || r.status===filterStatus;
+    return matchSearch && matchStatus;
+  });
+  const body = document.getElementById('listBody');
+  body.innerHTML='';
+  document.getElementById('emptyMsg').classList.toggle('hidden', list.length>0);
+  list.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="code-tag">${r.codigo||r.id}</span></td>
+      <td>${r.equipamento}${r.setor?'<br><small style="color:var(--muted)">'+r.setor+'</small>':''}</td>
+      <td>${r.solicitanteNome}</td>
+      <td>${fmtDate(r.data)}</td>
+      <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
+      <td>${r.classificacao?('<span class="badge '+r.classificacao+'">'+classLabel(r.classificacao)+'</span>'):'-'}</td>
+      <td class="actions-cell">
+        <button class="btn secondary" onclick="viewDetail('${r.id}')">👁️</button>
+        <button class="btn secondary" onclick="editReg('${r.id}')">✏️</button>
+        <button class="btn danger" onclick="deleteReg('${r.id}')">🗑️</button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+document.getElementById('searchInput').addEventListener('input', renderList);
+document.getElementById('filterStatus').addEventListener('change', renderList);
+
+function editReg(id){
+  const reg = registros.find(r=>r.id===id);
+  loadForm(reg);
+  showView('new');
+}
+function deleteReg(id){
+  if(!confirm('Excluir esta solicitação permanentemente?')) return;
+  registros = registros.filter(r=>r.id!==id);
+  save();
+  renderList();
+}
+
+// ---------- Detail / Report ----------
+function viewDetail(id){
+  const r = registros.find(x=>x.id===id);
+  const html = `
+    <div class="toolbar">
+      <h2 style="border:none;margin:0;">Relatório — <span class="code-tag">${r.codigo||r.id}</span></h2>
+      <div class="row">
+        <button class="btn secondary no-print" onclick="showView('list')">← Voltar</button>
+        <button class="btn secondary no-print" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn secondary no-print" onclick="emailPDF('${r.id}')">📧 Enviar por E-mail</button>
+        <button class="btn no-print" onclick="exportPDF('${r.id}')">📄 Exportar PDF</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="kv"><b>Equipamento/Local</b>${r.equipamento}</div>
+        <div class="kv"><b>Setor</b>${r.setor||'-'}</div>
+        <div class="kv"><b>Data da solicitação</b>${fmtDate(r.data)}</div>
+        <div class="kv"><b>Prioridade</b>${r.prioridade}</div>
+        <div class="kv"><b>Status</b><span class="badge ${r.status}">${statusLabel(r.status)}</span></div>
+        <div class="kv"><b>Classificação</b>${r.classificacao?classLabel(r.classificacao):'-'}</div>
+        <div class="kv"><b>Descrição do problema</b>${r.descricao||'-'}</div>
+      </div>
+      <div>
+        <div class="kv"><b>Solicitante</b>${r.solicitanteNome} ${r.solicitanteContato?'('+r.solicitanteContato+')':''}</div>
+        <div class="kv"><b>Responsável pela manutenção</b>${r.tecnicoNome||'-'}</div>
+        <div class="kv"><b>Data de execução</b>${fmtDate(r.dataExecucao)}</div>
+        <div class="kv"><b>Serviço realizado</b>${r.servico||'-'}</div>
+        <div class="kv"><b>Materiais utilizados</b>${r.materiais||'-'}</div>
+      </div>
+    </div>
+    <h2>Fotos</h2>
+    <div class="photos-grid">${(r.fotos||[]).map(p=>`<div class="photo-thumb"><img src="${p.data}"></div>`).join('') || '<span style="color:var(--muted)">Nenhuma foto anexada</span>'}</div>
+    <h2>Assinaturas</h2>
+    <div class="grid">
+      <div><label>Solicitante</label>${r.assinaturaSolicitante?`<img class="sig-preview" src="${r.assinaturaSolicitante}">`:'<span style="color:var(--muted)">Não assinado</span>'}</div>
+      <div><label>Responsável pela manutenção</label>${r.assinaturaTecnico?`<img class="sig-preview" src="${r.assinaturaTecnico}">`:'<span style="color:var(--muted)">Não assinado</span>'}</div>
+    </div>
+  `;
+  document.getElementById('detailContent').innerHTML = html;
+  showView('detail');
+}
+
+function buildPDF(id){
+  const r = registros.find(x=>x.id===id);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  let y = 18;
+  doc.setTextColor(81,200,197);
+  doc.setFontSize(18); doc.setFont(undefined,'bold'); doc.text('KRONAN', 15, y);
+  doc.setTextColor(20); doc.setFontSize(12); doc.setFont(undefined,'normal');
+  doc.text('Relatório de Manutenção', 50, y);
+  y += 7;
+  doc.setFontSize(10); doc.setTextColor(100); doc.text('Número: '+(r.codigo||r.id), 15, y); y+=8;
+  doc.setDrawColor(81,200,197); doc.setLineWidth(0.6); doc.line(15,y,195,y); y+=6;
+
+  function field(label, value){
+    doc.setFontSize(9); doc.setTextColor(120); doc.text(label, 15, y);
+    doc.setFontSize(11); doc.setTextColor(20);
+    const lines = doc.splitTextToSize(String(value||'-'), 180);
+    doc.text(lines, 15, y+5);
+    y += 5 + (lines.length*5) + 3;
+  }
+  field('Equipamento / Local', r.equipamento);
+  field('Setor', r.setor);
+  field('Data da solicitação / Prioridade', fmtDate(r.data)+' — '+r.prioridade);
+  field('Descrição do problema relatado', r.descricao);
+  field('Solicitante', r.solicitanteNome + (r.solicitanteContato?(' — '+r.solicitanteContato):''));
+  field('Responsável pela manutenção / Data execução', (r.tecnicoNome||'-')+' — '+fmtDate(r.dataExecucao));
+  field('Serviço realizado / Diagnóstico', r.servico);
+  field('Materiais utilizados', r.materiais);
+  field('Status', statusLabel(r.status));
+  field('Classificação da ocorrência', r.classificacao?classLabel(r.classificacao):'-');
+
+  if(y > 240){ doc.addPage(); y=15; }
+  if(r.fotos && r.fotos.length){
+    doc.setFontSize(12); doc.setTextColor(20); doc.text('Fotos', 15, y); y+=5;
+    let x = 15;
+    r.fotos.forEach((p,i)=>{
+      if(x > 160){ x=15; y+=45; }
+      if(y > 250){ doc.addPage(); y=15; x=15; }
+      try{ doc.addImage(p.data, 'JPEG', x, y, 40, 40); }catch(e){}
+      x += 45;
+    });
+    y += 50;
+  }
+  if(y > 220){ doc.addPage(); y=15; }
+  doc.setFontSize(12); doc.setTextColor(20); doc.text('Assinaturas', 15, y); y+=6;
+  doc.setFontSize(9); doc.setTextColor(120);
+  doc.text('Solicitante', 15, y);
+  doc.text('Responsável pela manutenção', 110, y);
+  y += 3;
+  if(r.assinaturaSolicitante){ try{ doc.addImage(r.assinaturaSolicitante,'PNG',15,y,80,30);}catch(e){} }
+  if(r.assinaturaTecnico){ try{ doc.addImage(r.assinaturaTecnico,'PNG',110,y,80,30);}catch(e){} }
+  y += 32;
+  doc.line(15,y,95,y); doc.line(110,y,190,y);
+  doc.setFontSize(8); doc.setTextColor(60);
+  doc.text(r.solicitanteNome||'', 15, y+4);
+  doc.text(r.tecnicoNome||'', 110, y+4);
+
+  return { doc, r };
+}
+
+function exportPDF(id){
+  const { doc, r } = buildPDF(id);
+  doc.save('KRONAN_Manutencao_'+String(r.codigo||r.id).replace('/','-')+'.pdf');
+}
+
+async function emailPDF(id){
+  const { doc, r } = buildPDF(id);
+  const fileName = 'KRONAN_Manutencao_'+String(r.codigo||r.id).replace('/','-')+'.pdf';
+  const pdfBlob = doc.output('blob');
+  const file = new File([pdfBlob], fileName, {type:'application/pdf'});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({
+        files:[file],
+        title:'Relatório de Manutenção KRONAN — '+(r.codigo||r.id),
+        text:'Segue o relatório de manutenção '+(r.codigo||r.id)+' — '+r.equipamento
+      });
+      return;
+    }catch(e){
+      if(e.name === 'AbortError') return;
+    }
+  }
+  doc.save(fileName);
+  const subject = encodeURIComponent('Relatório de Manutenção KRONAN — '+(r.codigo||r.id));
+  const body = encodeURIComponent('Segue o relatório de manutenção '+(r.codigo||r.id)+' ('+r.equipamento+').\n\nO PDF foi baixado neste dispositivo — anexe-o manualmente ao e-mail.');
+  window.location.href = 'mailto:?subject='+subject+'&body='+body;
+}
+
+// ---------- Banco de Manutenção ----------
+function renderStatCards(){
+  const total = registros.length;
+  const concluidas = registros.filter(r=>r.status==='concluida').length;
+  const pendentes = registros.filter(r=>r.status==='pendente').length;
+  const malUso = registros.filter(r=>r.classificacao==='mal_uso').length;
+  document.getElementById('statCards').innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Total de registros</div></div>
+    <div class="stat-card"><div class="num">${concluidas}</div><div class="lbl">Concluídas</div></div>
+    <div class="stat-card"><div class="num">${pendentes}</div><div class="lbl">Pendentes</div></div>
+    <div class="stat-card"><div class="num">${malUso}</div><div class="lbl">Mal uso</div></div>
+  `;
+}
+function renderBanco(){
+  renderStatCards();
+  const search = document.getElementById('bancoSearch').value.toLowerCase();
+  const filterClass = document.getElementById('bancoFilterClass').value;
+  let list = registros.filter(r=>{
+    const matchSearch = !search || (r.equipamento+r.setor+r.codigo+r.solicitanteNome+r.tecnicoNome+r.descricao+r.servico).toLowerCase().includes(search);
+    const matchClass = !filterClass || r.classificacao===filterClass;
+    return matchSearch && matchClass;
+  });
+  const body = document.getElementById('bancoBody');
+  body.innerHTML='';
+  document.getElementById('bancoEmpty').classList.toggle('hidden', list.length>0);
+  list.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="code-tag">${r.codigo||r.id}</span></td>
+      <td>${fmtDate(r.data)}</td>
+      <td>${r.equipamento}</td>
+      <td>${r.setor||'-'}</td>
+      <td>${r.solicitanteNome}</td>
+      <td>${r.tecnicoNome||'-'}</td>
+      <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
+      <td>${r.classificacao?('<span class="badge '+r.classificacao+'">'+classLabel(r.classificacao)+'</span>'):'-'}</td>
+      <td class="actions-cell">
+        <button class="btn secondary" onclick="viewDetail('${r.id}')">👁️</button>
+        <button class="btn secondary" onclick="editReg('${r.id}')">✏️</button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+document.getElementById('bancoSearch').addEventListener('input', renderBanco);
+document.getElementById('bancoFilterClass').addEventListener('change', renderBanco);
+
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
+  const headers = ['Numero','Data Solicitacao','Data Execucao','Prioridade','Equipamento/Local','Setor','Descricao do Problema','Solicitante','Contato Solicitante','Responsavel Manutencao','Servico Realizado','Materiais Utilizados','Status','Classificacao'];
+  const rows = registros.map(r => [
+    r.codigo||r.id, fmtDate(r.data), fmtDate(r.dataExecucao), r.prioridade, r.equipamento, r.setor,
+    r.descricao, r.solicitanteNome, r.solicitanteContato, r.tecnicoNome, r.servico, r.materiais,
+    statusLabel(r.status), r.classificacao?classLabel(r.classificacao).replace(/^\S+\s/,''):''
+  ]);
+  function csvEscape(v){
+    v = String(v??'');
+    if(/[",;\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"';
+    return v;
+  }
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(';')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'KRONAN_Banco_Manutencao_'+todayISO()+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ---------- PWA: service worker + botão de instalar ----------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.classList.remove('hidden');
+});
+document.addEventListener('DOMContentLoaded', ()=>{
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.addEventListener('click', async ()=>{
+    if(!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    btn.classList.add('hidden');
+  });
+});
+
+// ---------- init ----------
+resetForm();
+renderList();
+</script>
+</body>
+</html>
