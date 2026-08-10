@@ -133,18 +133,63 @@
     <span class="logo">KRONAN</span>
     <span class="sub">Controle de<br>Manutenção</span>
   </div>
-  <nav>
+  <nav id="mainNav" class="hidden">
     <button data-view="list" class="navbtn active">📋 Solicitações</button>
     <button data-view="new" class="navbtn">➕ Nova Solicitação</button>
     <button data-view="banco" class="navbtn">🗄️ Banco de Manutenção</button>
+    <button data-view="usuarios" class="navbtn">👤 Usuários</button>
     <button id="installBtn" class="hidden" style="background:var(--teal);border-color:var(--teal);color:#03211f;padding:10px 16px;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:700;font-family:inherit;border:none;">⬇️ Instalar App</button>
+    <span id="userBadge" style="display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border);padding:8px 14px;border-radius:10px;font-size:.8rem;"></span>
+    <button id="logoutBtn" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:600;font-family:inherit;">🚪 Sair</button>
   </nav>
 </header>
 
 <main>
 
+  <!-- LOGIN -->
+  <section id="view-login">
+    <div class="card" style="max-width:420px;margin:40px auto;">
+      <h2>🔐 Entrar</h2>
+      <div class="field"><label>Nome de usuário (máx. 10 caracteres)</label><input id="login_nome" maxlength="10" placeholder="Ex: Maximiliano"></div>
+      <div class="field"><label>Senha (4 dígitos)</label><input id="login_senha" type="password" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+      <button class="btn" id="loginBtn" style="width:100%;">Entrar</button>
+      <div id="loginError" style="color:var(--danger);font-size:.8rem;margin-top:10px;"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">
+      <button class="btn secondary" id="showCadastroBtn" style="width:100%;">➕ Cadastrar novo usuário</button>
+      <div id="cadastroForm" class="hidden" style="margin-top:16px;">
+        <div class="field"><label>Nome (máx. 10 caracteres)</label><input id="cad_nome" maxlength="10" placeholder="Ex: Maximiliano"></div>
+        <div class="field"><label>Cargo (máx. 15 caracteres)</label><input id="cad_cargo" maxlength="15" placeholder="Ex: Encarregado"></div>
+        <div class="field"><label>Senha (4 dígitos)</label><input id="cad_senha" type="password" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+        <button class="btn" id="cadastrarBtn" style="width:100%;">Cadastrar e entrar</button>
+        <div id="cadastroError" style="color:var(--danger);font-size:.8rem;margin-top:10px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- USUÁRIOS -->
+  <section id="view-usuarios" class="hidden">
+    <div class="card">
+      <h2>👤 Usuários Cadastrados</h2>
+      <table>
+        <thead><tr><th>Nome</th><th>Cargo</th><th>Ações</th></tr></thead>
+        <tbody id="usuariosBody"></tbody>
+      </table>
+      <div id="usuariosEmpty" class="empty hidden">Nenhum usuário cadastrado.</div>
+    </div>
+    <div class="card">
+      <h2>➕ Novo Usuário</h2>
+      <div class="grid3">
+        <div class="field"><label>Nome (máx. 10)</label><input id="novo_nome" maxlength="10"></div>
+        <div class="field"><label>Cargo (máx. 15)</label><input id="novo_cargo" maxlength="15"></div>
+        <div class="field"><label>Senha (4 dígitos)</label><input id="novo_senha" type="password" maxlength="4" inputmode="numeric"></div>
+      </div>
+      <button class="btn" id="addUsuarioBtn">Cadastrar</button>
+      <div id="novoUsuarioError" style="color:var(--danger);font-size:.8rem;margin-top:10px;"></div>
+    </div>
+  </section>
+
   <!-- LISTA -->
-  <section id="view-list">
+  <section id="view-list" class="hidden">
     <div class="toolbar">
       <input class="search" id="searchInput" placeholder="🔍 Buscar por equipamento, local, código...">
       <select id="filterStatus" style="max-width:200px;">
@@ -169,9 +214,10 @@
   <section id="view-new" class="hidden">
     <div class="card">
       <h2>📝 Dados da Solicitação</h2>
+      <div class="row no-print" id="formModeBanner" style="background:rgba(81,200,197,.12);border:1px solid var(--teal);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.82rem;color:var(--teal);font-weight:600;"></div>
       <div class="grid3">
-        <div class="field"><label>Número</label><input id="f_codigo" readonly></div>
-        <div class="field"><label>Data da solicitação</label><input id="f_data" type="date"></div>
+        <div class="field"><label>Número do Chamado</label><input id="f_codigo" readonly></div>
+        <div class="field"><label>Nº de Patrimônio / Registro do Equipamento</label><input id="f_patrimonio" placeholder="Ex: PAT-00234"></div>
         <div class="field"><label>Prioridade</label>
           <select id="f_prioridade"><option>Baixa</option><option selected>Média</option><option>Alta</option><option>Urgente</option></select>
         </div>
@@ -180,6 +226,7 @@
         <div class="field"><label>Equipamento / Local</label><input id="f_equipamento" placeholder="Ex: Ar-condicionado - Sala 203"></div>
         <div class="field"><label>Setor / Departamento</label><input id="f_setor" placeholder="Ex: Manutenção Predial"></div>
       </div>
+      <div class="field"><label>Data da solicitação</label><input id="f_data" type="date"></div>
       <div class="field"><label>Descrição do problema relatado</label><textarea id="f_descricao" placeholder="Descreva o problema identificado pelo solicitante..."></textarea></div>
 
       <h2>👤 Solicitante</h2>
@@ -188,29 +235,31 @@
         <div class="field"><label>Contato/Ramal</label><input id="f_solicitante_contato"></div>
       </div>
 
-      <h2>🔧 Execução da Manutenção</h2>
-      <div class="grid">
-        <div class="field"><label>Responsável pela manutenção</label><input id="f_tecnico_nome"></div>
-        <div class="field"><label>Data de execução</label><input id="f_data_execucao" type="date"></div>
-      </div>
-      <div class="field"><label>Serviço realizado / Diagnóstico técnico</label><textarea id="f_servico" placeholder="Descreva o que foi encontrado e o serviço executado..."></textarea></div>
-      <div class="field"><label>Peças/materiais utilizados</label><textarea id="f_materiais" placeholder="Opcional"></textarea></div>
+      <div id="secExecucao">
+        <h2>🔧 Execução da Manutenção (equipe)</h2>
+        <div class="grid">
+          <div class="field"><label>Responsável pela manutenção</label><input id="f_tecnico_nome"></div>
+          <div class="field"><label>Data de execução</label><input id="f_data_execucao" type="date"></div>
+        </div>
+        <div class="field"><label>Serviço realizado / Diagnóstico técnico</label><textarea id="f_servico" placeholder="Descreva o que foi encontrado e o serviço executado..."></textarea></div>
+        <div class="field"><label>Peças/materiais utilizados</label><textarea id="f_materiais" placeholder="Opcional"></textarea></div>
 
-      <h2>✅ Classificação da Ocorrência</h2>
-      <div class="status-options" id="statusOptions">
-        <div class="status-chip" data-value="mal_uso">⚠️ Mal uso</div>
-        <div class="status-chip" data-value="sem_avaria">✅ Sem avaria identificada</div>
-        <div class="status-chip" data-value="defeito_tecnico">🔩 Defeito técnico</div>
-        <div class="status-chip" data-value="desgaste_natural">⏳ Desgaste natural</div>
-        <div class="status-chip" data-value="garantia">🛡️ Garantia acionada</div>
-      </div>
-      <div class="field" style="margin-top:12px;">
-        <label>Status da solicitação</label>
-        <select id="f_status">
-          <option value="pendente">Pendente</option>
-          <option value="andamento">Em andamento</option>
-          <option value="concluida">Concluída</option>
-        </select>
+        <h2>✅ Classificação da Ocorrência</h2>
+        <div class="status-options" id="statusOptions">
+          <div class="status-chip" data-value="mal_uso">⚠️ Mal uso</div>
+          <div class="status-chip" data-value="sem_avaria">✅ Sem avaria identificada</div>
+          <div class="status-chip" data-value="defeito_tecnico">🔩 Defeito técnico</div>
+          <div class="status-chip" data-value="desgaste_natural">⏳ Desgaste natural</div>
+          <div class="status-chip" data-value="garantia">🛡️ Garantia acionada</div>
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>Status do chamado</label>
+          <select id="f_status">
+            <option value="pendente">Aberto (aguardando atendimento)</option>
+            <option value="andamento">Em andamento</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        </div>
       </div>
 
       <h2>📷 Fotos</h2>
@@ -225,7 +274,7 @@
           <img class="sig-mini" id="sigMiniSolicitante">
           <button type="button" class="btn dark" style="width:100%;" onclick="openSigModal('solicitante')">✍️ Assinar (Solicitante)</button>
         </div>
-        <div class="sig-capture">
+        <div class="sig-capture" id="sigTecnicoWrap">
           <div class="sig-status" id="sigStatusTecnico">Aguardando assinatura</div>
           <img class="sig-mini" id="sigMiniTecnico">
           <button type="button" class="btn dark" style="width:100%;" onclick="openSigModal('tecnico')">✍️ Assinar (Responsável)</button>
@@ -301,7 +350,11 @@
 <script>
 const STORAGE_KEY = 'kronan_manutencao_registros_v1';
 const COUNTER_KEY = 'kronan_manutencao_contador_v1';
+const USERS_KEY = 'kronan_usuarios_v1';
+const SESSION_KEY = 'kronan_usuario_logado_v1';
 let registros = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let usuarios = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+let currentUser = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
 let currentEditId = null;
 let currentPhotos = [];
 let selectedStatusChip = null;
@@ -309,6 +362,8 @@ let sigSolicitanteData = null;
 let sigTecnicoData = null;
 let sigModalTarget = null;
 let currentCodigo = null;
+let formMode = 'novo'; // 'novo' = aberto pelo solicitante | 'atender' = preenchido pela equipe
+const WHATSAPP_NUMBER = '5511995688557';
 
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(registros)); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -329,7 +384,7 @@ function showView(name){
   document.querySelectorAll('main > section').forEach(s=>s.classList.add('hidden'));
   document.getElementById('view-'+name).classList.remove('hidden');
   document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
-  const map = {list:0,new:1,banco:2};
+  const map = {list:0,new:1,banco:2,usuarios:3};
   if(map[name]!==undefined) document.querySelectorAll('.navbtn')[map[name]].classList.add('active');
 }
 document.querySelectorAll('.navbtn').forEach(b=>{
@@ -337,10 +392,140 @@ document.querySelectorAll('.navbtn').forEach(b=>{
     const v = b.dataset.view;
     if(v==='new') resetForm();
     if(v==='banco') renderBanco();
+    if(v==='usuarios') renderUsuarios();
     showView(v);
   });
 });
 document.getElementById('cancelBtn').addEventListener('click', ()=>{ showView('list'); renderList(); });
+
+// ---------- Autenticação ----------
+function saveUsuarios(){ localStorage.setItem(USERS_KEY, JSON.stringify(usuarios)); }
+function findUsuario(nome){ return usuarios.find(u => u.nome.toLowerCase() === nome.toLowerCase()); }
+
+function updateUserBadge(){
+  const badge = document.getElementById('userBadge');
+  const nav = document.getElementById('mainNav');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(currentUser){
+    badge.textContent = '👤 '+currentUser.nome+' · '+currentUser.cargo;
+    nav.classList.remove('hidden');
+    logoutBtn.classList.remove('hidden');
+  } else {
+    badge.textContent = '';
+    nav.classList.add('hidden');
+  }
+}
+
+function doLogin(nome, senha, errorElId){
+  const errorEl = document.getElementById(errorElId);
+  errorEl.textContent = '';
+  if(!nome || !senha){ errorEl.textContent = 'Informe usuário e senha.'; return false; }
+  const u = findUsuario(nome);
+  if(!u || u.senha !== senha){ errorEl.textContent = 'Usuário ou senha inválidos.'; return false; }
+  currentUser = {nome:u.nome, cargo:u.cargo};
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+  updateUserBadge();
+  resetForm();
+  renderList();
+  showView('list');
+  return true;
+}
+
+document.getElementById('loginBtn').addEventListener('click', ()=>{
+  const nome = document.getElementById('login_nome').value.trim();
+  const senha = document.getElementById('login_senha').value.trim();
+  doLogin(nome, senha, 'loginError');
+});
+
+document.getElementById('showCadastroBtn').addEventListener('click', ()=>{
+  document.getElementById('cadastroForm').classList.toggle('hidden');
+});
+
+document.getElementById('cadastrarBtn').addEventListener('click', ()=>{
+  const nome = document.getElementById('cad_nome').value.trim();
+  const cargo = document.getElementById('cad_cargo').value.trim();
+  const senha = document.getElementById('cad_senha').value.trim();
+  const errorEl = document.getElementById('cadastroError');
+  errorEl.textContent = '';
+  if(!nome || nome.length > 10){ errorEl.textContent = 'Nome obrigatório (até 10 caracteres).'; return; }
+  if(!cargo || cargo.length > 15){ errorEl.textContent = 'Cargo obrigatório (até 15 caracteres).'; return; }
+  if(!senha || senha.length !== 4){ errorEl.textContent = 'Senha deve ter exatamente 4 dígitos.'; return; }
+  if(findUsuario(nome)){ errorEl.textContent = 'Já existe um usuário com esse nome.'; return; }
+  usuarios.push({nome, cargo, senha});
+  saveUsuarios();
+  doLogin(nome, senha, 'cadastroError');
+});
+
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  currentUser = null;
+  sessionStorage.removeItem(SESSION_KEY);
+  updateUserBadge();
+  document.getElementById('login_nome').value = '';
+  document.getElementById('login_senha').value = '';
+  showView('login');
+});
+
+function renderUsuarios(){
+  const body = document.getElementById('usuariosBody');
+  body.innerHTML = '';
+  document.getElementById('usuariosEmpty').classList.toggle('hidden', usuarios.length>0);
+  usuarios.forEach((u,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${u.nome}</td><td>${u.cargo}</td>
+      <td class="actions-cell"><button class="btn danger" onclick="deleteUsuario(${i})">🗑️</button></td>`;
+    body.appendChild(tr);
+  });
+}
+function deleteUsuario(i){
+  const u = usuarios[i];
+  if(!confirm('Excluir o usuário "'+u.nome+'"?')) return;
+  usuarios.splice(i,1);
+  saveUsuarios();
+  if(currentUser && currentUser.nome === u.nome){
+    currentUser = null;
+    sessionStorage.removeItem(SESSION_KEY);
+    updateUserBadge();
+    showView('login');
+    return;
+  }
+  renderUsuarios();
+}
+document.getElementById('addUsuarioBtn').addEventListener('click', ()=>{
+  const nome = document.getElementById('novo_nome').value.trim();
+  const cargo = document.getElementById('novo_cargo').value.trim();
+  const senha = document.getElementById('novo_senha').value.trim();
+  const errorEl = document.getElementById('novoUsuarioError');
+  errorEl.textContent = '';
+  if(!nome || nome.length > 10){ errorEl.textContent = 'Nome obrigatório (até 10 caracteres).'; return; }
+  if(!cargo || cargo.length > 15){ errorEl.textContent = 'Cargo obrigatório (até 15 caracteres).'; return; }
+  if(!senha || senha.length !== 4){ errorEl.textContent = 'Senha deve ter exatamente 4 dígitos.'; return; }
+  if(findUsuario(nome)){ errorEl.textContent = 'Já existe um usuário com esse nome.'; return; }
+  usuarios.push({nome, cargo, senha});
+  saveUsuarios();
+  document.getElementById('novo_nome').value = '';
+  document.getElementById('novo_cargo').value = '';
+  document.getElementById('novo_senha').value = '';
+  renderUsuarios();
+});
+
+// ---------- Form mode: abertura de chamado (solicitante) x atendimento (equipe) ----------
+function applyFormMode(){
+  const teamOnly = document.getElementById('secExecucao');
+  const sigTecnico = document.getElementById('sigTecnicoWrap');
+  const banner = document.getElementById('formModeBanner');
+  const saveBtn = document.getElementById('saveBtn');
+  if(formMode === 'novo'){
+    teamOnly.classList.add('hidden');
+    sigTecnico.classList.add('hidden');
+    banner.textContent = '📨 Abertura de chamado — preencha os dados do problema. A equipe de manutenção completará o atendimento depois.';
+    saveBtn.textContent = '📨 Abrir Chamado';
+  } else {
+    teamOnly.classList.remove('hidden');
+    sigTecnico.classList.remove('hidden');
+    banner.textContent = '🔧 Atendimento — preencha os dados do serviço realizado, classifique a ocorrência e colha a assinatura do responsável.';
+    saveBtn.textContent = '💾 Salvar Atendimento';
+  }
+}
 
 // ---------- Status chips ----------
 document.querySelectorAll('.status-chip').forEach(chip=>{
@@ -477,7 +662,9 @@ function resetForm(){
   sigSolicitanteData = null;
   sigTecnicoData = null;
   currentCodigo = nextCodigo();
+  formMode = 'novo';
   document.getElementById('f_codigo').value = currentCodigo;
+  document.getElementById('f_patrimonio').value = '';
   document.getElementById('f_data').value = todayISO();
   document.getElementById('f_data_execucao').value = '';
   document.getElementById('f_prioridade').value = 'Média';
@@ -494,6 +681,7 @@ function resetForm(){
   renderPhotos();
   updateSigDisplay('Solicitante', null);
   updateSigDisplay('Tecnico', null);
+  applyFormMode();
 }
 
 function loadForm(reg){
@@ -503,7 +691,9 @@ function loadForm(reg){
   selectedStatusChip = reg.classificacao || null;
   sigSolicitanteData = reg.assinaturaSolicitante || null;
   sigTecnicoData = reg.assinaturaTecnico || null;
+  formMode = 'atender';
   document.getElementById('f_codigo').value = reg.codigo;
+  document.getElementById('f_patrimonio').value = reg.patrimonio||'';
   document.getElementById('f_data').value = reg.data;
   document.getElementById('f_data_execucao').value = reg.dataExecucao||'';
   document.getElementById('f_prioridade').value = reg.prioridade;
@@ -522,6 +712,7 @@ function loadForm(reg){
   renderPhotos();
   updateSigDisplay('Solicitante', sigSolicitanteData);
   updateSigDisplay('Tecnico', sigTecnicoData);
+  applyFormMode();
 }
 
 // ---------- Save ----------
@@ -531,9 +722,13 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
   if(!equipamento){ alert('Informe o Equipamento/Local.'); return; }
   if(!solicitanteNome){ alert('Informe o nome do solicitante.'); return; }
 
+  const isNewTicket = !currentEditId;
+  const statusAnterior = currentEditId ? (registros.find(r=>r.id===currentEditId)?.status) : null;
+
   const reg = {
     id: currentEditId || currentCodigo,
     codigo: currentCodigo,
+    patrimonio: document.getElementById('f_patrimonio').value.trim(),
     data: document.getElementById('f_data').value,
     dataExecucao: document.getElementById('f_data_execucao').value,
     prioridade: document.getElementById('f_prioridade').value,
@@ -545,7 +740,7 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
     tecnicoNome: document.getElementById('f_tecnico_nome').value.trim(),
     servico: document.getElementById('f_servico').value.trim(),
     materiais: document.getElementById('f_materiais').value.trim(),
-    status: document.getElementById('f_status').value,
+    status: isNewTicket ? 'pendente' : document.getElementById('f_status').value,
     classificacao: selectedStatusChip,
     fotos: currentPhotos,
     assinaturaSolicitante: sigSolicitanteData,
@@ -561,12 +756,41 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
     registros.unshift(reg);
   }
   save();
+
+  if(isNewTicket){
+    sendWhatsAppNotify(reg, 'aberto');
+  } else if(reg.status === 'concluida' && statusAnterior !== 'concluida'){
+    sendWhatsAppNotify(reg, 'concluida');
+  }
+
   showView('list');
   renderList();
 });
 
+// ---------- Notificação automática via WhatsApp ----------
+function sendWhatsAppNotify(reg, etapa){
+  let texto;
+  if(etapa === 'aberto'){
+    texto = `🛠️ *Novo Chamado KRONAN — ${reg.codigo}*\n`+
+      `Equipamento/Local: ${reg.equipamento}\n`+
+      (reg.patrimonio ? `Patrimônio: ${reg.patrimonio}\n` : '')+
+      `Setor: ${reg.setor||'-'}\n`+
+      `Prioridade: ${reg.prioridade}\n`+
+      `Solicitante: ${reg.solicitanteNome} ${reg.solicitanteContato?('('+reg.solicitanteContato+')'):''}\n`+
+      `Problema: ${reg.descricao||'-'}`;
+  } else {
+    texto = `✅ *Chamado Concluído KRONAN — ${reg.codigo}*\n`+
+      `Equipamento/Local: ${reg.equipamento}\n`+
+      `Responsável: ${reg.tecnicoNome||'-'}\n`+
+      `Serviço realizado: ${reg.servico||'-'}\n`+
+      `Classificação: ${reg.classificacao?classLabel(reg.classificacao):'-'}`;
+  }
+  const url = 'https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(texto);
+  window.open(url, '_blank');
+}
+
 // ---------- List ----------
-function statusLabel(s){ return {pendente:'Pendente',andamento:'Em andamento',concluida:'Concluída'}[s]||s; }
+function statusLabel(s){ return {pendente:'Aberto',andamento:'Em andamento',concluida:'Concluída'}[s]||s; }
 function classLabel(c){
   return {
     mal_uso:'⚠️ Mal uso', sem_avaria:'✅ Sem avaria', defeito_tecnico:'🔩 Defeito técnico',
@@ -594,9 +818,9 @@ function renderList(){
       <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
       <td>${r.classificacao?('<span class="badge '+r.classificacao+'">'+classLabel(r.classificacao)+'</span>'):'-'}</td>
       <td class="actions-cell">
-        <button class="btn secondary" onclick="viewDetail('${r.id}')">👁️</button>
-        <button class="btn secondary" onclick="editReg('${r.id}')">✏️</button>
-        <button class="btn danger" onclick="deleteReg('${r.id}')">🗑️</button>
+        <button class="btn secondary" onclick="viewDetail('${r.id}')" title="Ver relatório">👁️</button>
+        <button class="btn secondary" onclick="editReg('${r.id}')" title="Atender chamado">🔧 Atender</button>
+        <button class="btn danger" onclick="deleteReg('${r.id}')" title="Excluir">🗑️</button>
       </td>`;
     body.appendChild(tr);
   });
@@ -632,6 +856,7 @@ function viewDetail(id){
     <div class="grid2">
       <div>
         <div class="kv"><b>Equipamento/Local</b>${r.equipamento}</div>
+        <div class="kv"><b>Nº de Patrimônio/Registro</b>${r.patrimonio||'-'}</div>
         <div class="kv"><b>Setor</b>${r.setor||'-'}</div>
         <div class="kv"><b>Data da solicitação</b>${fmtDate(r.data)}</div>
         <div class="kv"><b>Prioridade</b>${r.prioridade}</div>
@@ -680,6 +905,7 @@ function buildPDF(id){
     y += 5 + (lines.length*5) + 3;
   }
   field('Equipamento / Local', r.equipamento);
+  field('Nº de Patrimônio / Registro', r.patrimonio);
   field('Setor', r.setor);
   field('Data da solicitação / Prioridade', fmtDate(r.data)+' — '+r.prioridade);
   field('Descrição do problema relatado', r.descricao);
@@ -785,8 +1011,8 @@ function renderBanco(){
       <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
       <td>${r.classificacao?('<span class="badge '+r.classificacao+'">'+classLabel(r.classificacao)+'</span>'):'-'}</td>
       <td class="actions-cell">
-        <button class="btn secondary" onclick="viewDetail('${r.id}')">👁️</button>
-        <button class="btn secondary" onclick="editReg('${r.id}')">✏️</button>
+        <button class="btn secondary" onclick="viewDetail('${r.id}')" title="Ver relatório">👁️</button>
+        <button class="btn secondary" onclick="editReg('${r.id}')" title="Atender chamado">🔧</button>
       </td>`;
     body.appendChild(tr);
   });
@@ -795,9 +1021,9 @@ document.getElementById('bancoSearch').addEventListener('input', renderBanco);
 document.getElementById('bancoFilterClass').addEventListener('change', renderBanco);
 
 document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
-  const headers = ['Numero','Data Solicitacao','Data Execucao','Prioridade','Equipamento/Local','Setor','Descricao do Problema','Solicitante','Contato Solicitante','Responsavel Manutencao','Servico Realizado','Materiais Utilizados','Status','Classificacao'];
+  const headers = ['Numero','Patrimonio/Registro','Data Solicitacao','Data Execucao','Prioridade','Equipamento/Local','Setor','Descricao do Problema','Solicitante','Contato Solicitante','Responsavel Manutencao','Servico Realizado','Materiais Utilizados','Status','Classificacao'];
   const rows = registros.map(r => [
-    r.codigo||r.id, fmtDate(r.data), fmtDate(r.dataExecucao), r.prioridade, r.equipamento, r.setor,
+    r.codigo||r.id, r.patrimonio, fmtDate(r.data), fmtDate(r.dataExecucao), r.prioridade, r.equipamento, r.setor,
     r.descricao, r.solicitanteNome, r.solicitanteContato, r.tecnicoNome, r.servico, r.materiais,
     statusLabel(r.status), r.classificacao?classLabel(r.classificacao).replace(/^\S+\s/,''):''
   ]);
@@ -841,8 +1067,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 // ---------- init ----------
-resetForm();
-renderList();
+updateUserBadge();
+if(currentUser){
+  resetForm();
+  renderList();
+  showView('list');
+} else {
+  showView('login');
+}
 </script>
 </body>
 </html>
