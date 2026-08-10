@@ -760,32 +760,50 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
   if(isNewTicket){
     sendWhatsAppNotify(reg, 'aberto');
   } else if(reg.status === 'concluida' && statusAnterior !== 'concluida'){
-    sendWhatsAppNotify(reg, 'concluida');
+    shareWhatsAppReport(reg.id);
   }
 
   showView('list');
   renderList();
 });
 
-// ---------- Notificação automática via WhatsApp ----------
+// ---------- Notificação automática via WhatsApp (abertura de chamado — só texto) ----------
 function sendWhatsAppNotify(reg, etapa){
-  let texto;
-  if(etapa === 'aberto'){
-    texto = `🛠️ *Novo Chamado KRONAN — ${reg.codigo}*\n`+
-      `Equipamento/Local: ${reg.equipamento}\n`+
-      (reg.patrimonio ? `Patrimônio: ${reg.patrimonio}\n` : '')+
-      `Setor: ${reg.setor||'-'}\n`+
-      `Prioridade: ${reg.prioridade}\n`+
-      `Solicitante: ${reg.solicitanteNome} ${reg.solicitanteContato?('('+reg.solicitanteContato+')'):''}\n`+
-      `Problema: ${reg.descricao||'-'}`;
-  } else {
-    texto = `✅ *Chamado Concluído KRONAN — ${reg.codigo}*\n`+
-      `Equipamento/Local: ${reg.equipamento}\n`+
-      `Responsável: ${reg.tecnicoNome||'-'}\n`+
-      `Serviço realizado: ${reg.servico||'-'}\n`+
-      `Classificação: ${reg.classificacao?classLabel(reg.classificacao):'-'}`;
-  }
+  const texto = `🛠️ *Novo Chamado KRONAN — ${reg.codigo}*\n`+
+    `Equipamento/Local: ${reg.equipamento}\n`+
+    (reg.patrimonio ? `Patrimônio: ${reg.patrimonio}\n` : '')+
+    `Setor: ${reg.setor||'-'}\n`+
+    `Prioridade: ${reg.prioridade}\n`+
+    `Solicitante: ${reg.solicitanteNome} ${reg.solicitanteContato?('('+reg.solicitanteContato+')'):''}\n`+
+    `Problema: ${reg.descricao||'-'}`;
   const url = 'https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(texto);
+  window.open(url, '_blank');
+}
+
+// ---------- Relatório final por WhatsApp (com fotos, para registro físico) ----------
+async function shareWhatsAppReport(id){
+  const { doc, r } = buildPDF(id);
+  const fileName = 'KRONAN_Relatorio_'+String(r.codigo||r.id).replace('/','-')+'.pdf';
+  const pdfBlob = doc.output('blob');
+  const file = new File([pdfBlob], fileName, {type:'application/pdf'});
+  const texto = `✅ *Relatório de Manutenção Concluído — KRONAN ${r.codigo}*\n`+
+    `Equipamento/Local: ${r.equipamento}\n`+
+    (r.patrimonio ? `Patrimônio: ${r.patrimonio}\n` : '')+
+    `Responsável: ${r.tecnicoNome||'-'}\n`+
+    `Serviço realizado: ${r.servico||'-'}\n`+
+    `Classificação: ${r.classificacao?classLabel(r.classificacao):'-'}\n`+
+    `Segue o relatório em PDF com fotos, assinado pelo solicitante e pelo responsável, para registro físico.`;
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({ files:[file], title:'Relatório de Manutenção KRONAN — '+r.codigo, text: texto });
+      return;
+    }catch(e){
+      if(e.name === 'AbortError') return;
+    }
+  }
+  doc.save(fileName);
+  const url = 'https://wa.me/'+WHATSAPP_NUMBER+'?text='+encodeURIComponent(texto+'\n\n(O PDF com as fotos foi baixado neste dispositivo — anexe-o manualmente aqui no WhatsApp)');
   window.open(url, '_blank');
 }
 
@@ -850,6 +868,7 @@ function viewDetail(id){
         <button class="btn secondary no-print" onclick="showView('list')">← Voltar</button>
         <button class="btn secondary no-print" onclick="window.print()">🖨️ Imprimir</button>
         <button class="btn secondary no-print" onclick="emailPDF('${r.id}')">📧 Enviar por E-mail</button>
+        <button class="btn secondary no-print" onclick="shareWhatsAppReport('${r.id}')">📲 Enviar por WhatsApp</button>
         <button class="btn no-print" onclick="exportPDF('${r.id}')">📄 Exportar PDF</button>
       </div>
     </div>
