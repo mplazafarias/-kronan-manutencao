@@ -194,7 +194,7 @@
       <input class="search" id="searchInput" placeholder="🔍 Buscar por equipamento, local, código...">
       <select id="filterStatus" style="max-width:200px;">
         <option value="">Todos os status</option>
-        <option value="pendente">Pendente</option>
+        <option value="pendente">Aberto</option>
         <option value="andamento">Em andamento</option>
         <option value="concluida">Concluída</option>
       </select>
@@ -365,9 +365,20 @@ let currentCodigo = null;
 let formMode = 'novo'; // 'novo' = aberto pelo solicitante | 'atender' = preenchido pela equipe
 const WHATSAPP_NUMBER = '5511995688557';
 
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(registros)); }
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+    return true;
+  }catch(e){
+    alert('⚠️ Não foi possível salvar: o armazenamento do dispositivo está cheio.\n\nIsso geralmente acontece por excesso de fotos acumuladas. Tente remover fotos antigas de chamados já concluídos ou reduzir a quantidade de fotos deste chamado, e salve novamente.\n\nDetalhe técnico: '+e.message);
+    return false;
+  }
+}
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function fmtDate(d){ if(!d) return '-'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function escapeHtml(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 // ---------- Sequential numbering: 0001/2026 ----------
 function nextCodigo(){
@@ -449,7 +460,7 @@ document.getElementById('cadastrarBtn').addEventListener('click', ()=>{
   errorEl.textContent = '';
   if(!nome || nome.length > 10){ errorEl.textContent = 'Nome obrigatório (até 10 caracteres).'; return; }
   if(!cargo || cargo.length > 15){ errorEl.textContent = 'Cargo obrigatório (até 15 caracteres).'; return; }
-  if(!senha || senha.length !== 4){ errorEl.textContent = 'Senha deve ter exatamente 4 dígitos.'; return; }
+  if(!/^\d{4}$/.test(senha)){ errorEl.textContent = 'Senha deve ter exatamente 4 dígitos numéricos.'; return; }
   if(findUsuario(nome)){ errorEl.textContent = 'Já existe um usuário com esse nome.'; return; }
   usuarios.push({nome, cargo, senha});
   saveUsuarios();
@@ -471,7 +482,7 @@ function renderUsuarios(){
   document.getElementById('usuariosEmpty').classList.toggle('hidden', usuarios.length>0);
   usuarios.forEach((u,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${u.nome}</td><td>${u.cargo}</td>
+    tr.innerHTML = `<td>${escapeHtml(u.nome)}</td><td>${escapeHtml(u.cargo)}</td>
       <td class="actions-cell"><button class="btn danger" onclick="deleteUsuario(${i})">🗑️</button></td>`;
     body.appendChild(tr);
   });
@@ -498,7 +509,7 @@ document.getElementById('addUsuarioBtn').addEventListener('click', ()=>{
   errorEl.textContent = '';
   if(!nome || nome.length > 10){ errorEl.textContent = 'Nome obrigatório (até 10 caracteres).'; return; }
   if(!cargo || cargo.length > 15){ errorEl.textContent = 'Cargo obrigatório (até 15 caracteres).'; return; }
-  if(!senha || senha.length !== 4){ errorEl.textContent = 'Senha deve ter exatamente 4 dígitos.'; return; }
+  if(!/^\d{4}$/.test(senha)){ errorEl.textContent = 'Senha deve ter exatamente 4 dígitos numéricos.'; return; }
   if(findUsuario(nome)){ errorEl.textContent = 'Já existe um usuário com esse nome.'; return; }
   usuarios.push({nome, cargo, senha});
   saveUsuarios();
@@ -518,11 +529,18 @@ function applyFormMode(){
     teamOnly.classList.add('hidden');
     sigTecnico.classList.add('hidden');
     banner.textContent = '📨 Abertura de chamado — preencha os dados do problema. A equipe de manutenção completará o atendimento depois.';
+    banner.style.borderColor = 'var(--teal)'; banner.style.color = 'var(--teal)';
     saveBtn.textContent = '📨 Abrir Chamado';
   } else {
     teamOnly.classList.remove('hidden');
     sigTecnico.classList.remove('hidden');
-    banner.textContent = '🔧 Atendimento — preencha os dados do serviço realizado, classifique a ocorrência e colha a assinatura do responsável.';
+    if(currentEditId && registros.find(r=>r.id===currentEditId)?.status === 'concluida'){
+      banner.textContent = '⚠️ Este chamado já está concluído e assinado. Qualquer alteração vai invalidar as assinaturas e exigirá reassinatura.';
+      banner.style.borderColor = 'var(--danger)'; banner.style.color = '#ff8f92';
+    } else {
+      banner.textContent = '🔧 Atendimento — preencha os dados do serviço realizado, classifique a ocorrência e colha a assinatura do responsável.';
+      banner.style.borderColor = 'var(--teal)'; banner.style.color = 'var(--teal)';
+    }
     saveBtn.textContent = '💾 Salvar Atendimento';
   }
 }
@@ -547,16 +565,37 @@ uploadBox.addEventListener('drop', e=>{
   e.preventDefault(); uploadBox.style.borderColor='var(--border)';
   handleFiles(e.dataTransfer.files);
 });
-function handleFiles(files){
-  [...files].forEach(file=>{
-    if(!file.type.startsWith('image/')) return;
+function compressImage(file, maxWidth=1280, quality=0.72){
+  return new Promise((resolve, reject)=>{
     const reader = new FileReader();
     reader.onload = ev=>{
-      currentPhotos.push({data: ev.target.result, caption:'', ts: new Date().toISOString()});
-      renderPhotos();
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxWidth){ h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = ()=> reject(new Error('Não foi possível processar a imagem.'));
+      img.src = ev.target.result;
     };
+    reader.onerror = ()=> reject(new Error('Não foi possível ler o arquivo.'));
     reader.readAsDataURL(file);
   });
+}
+async function handleFiles(files){
+  const list = [...files].filter(f=>f.type.startsWith('image/'));
+  for(const file of list){
+    try{
+      const data = await compressImage(file);
+      currentPhotos.push({data, caption:'', ts: new Date().toISOString()});
+      renderPhotos();
+    }catch(e){
+      alert('⚠️ Não foi possível processar uma das fotos: '+e.message);
+    }
+  }
   photoInput.value='';
 }
 function renderPhotos(){
@@ -702,7 +741,7 @@ function loadForm(reg){
   document.getElementById('f_descricao').value = reg.descricao;
   document.getElementById('f_solicitante_nome').value = reg.solicitanteNome;
   document.getElementById('f_solicitante_contato').value = reg.solicitanteContato;
-  document.getElementById('f_tecnico_nome').value = reg.tecnicoNome;
+  document.getElementById('f_tecnico_nome').value = reg.tecnicoNome || (currentUser ? currentUser.nome : '');
   document.getElementById('f_servico').value = reg.servico;
   document.getElementById('f_materiais').value = reg.materiais;
   document.getElementById('f_status').value = reg.status;
@@ -723,7 +762,20 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
   if(!solicitanteNome){ alert('Informe o nome do solicitante.'); return; }
 
   const isNewTicket = !currentEditId;
-  const statusAnterior = currentEditId ? (registros.find(r=>r.id===currentEditId)?.status) : null;
+  const registroAnterior = currentEditId ? registros.find(r=>r.id===currentEditId) : null;
+  const statusAnterior = registroAnterior ? registroAnterior.status : null;
+
+  // Protege registros já concluídos e assinados: editar exige reconfirmação e invalida as assinaturas
+  let statusFinal = isNewTicket ? 'pendente' : document.getElementById('f_status').value;
+  if(!isNewTicket && statusAnterior === 'concluida'){
+    const confirmar = confirm('Este chamado já está CONCLUÍDO e assinado por ambas as partes.\n\nAlterar os dados agora vai invalidar as assinaturas atuais — o chamado voltará para "Em andamento" até ser reassinado.\n\nDeseja continuar mesmo assim?');
+    if(!confirmar) return;
+    sigSolicitanteData = null;
+    sigTecnicoData = null;
+    updateSigDisplay('Solicitante', null);
+    updateSigDisplay('Tecnico', null);
+    statusFinal = 'andamento';
+  }
 
   const reg = {
     id: currentEditId || currentCodigo,
@@ -740,22 +792,32 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
     tecnicoNome: document.getElementById('f_tecnico_nome').value.trim(),
     servico: document.getElementById('f_servico').value.trim(),
     materiais: document.getElementById('f_materiais').value.trim(),
-    status: isNewTicket ? 'pendente' : document.getElementById('f_status').value,
+    status: statusFinal,
     classificacao: selectedStatusChip,
     fotos: currentPhotos,
     assinaturaSolicitante: sigSolicitanteData,
     assinaturaTecnico: sigTecnicoData,
-    criadoEm: currentEditId ? (registros.find(r=>r.id===currentEditId)?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
+    abertoPor: isNewTicket ? (currentUser ? currentUser.nome+' ('+currentUser.cargo+')' : '-') : (registroAnterior?.abertoPor || '-'),
+    atendidoPor: !isNewTicket ? (currentUser ? currentUser.nome+' ('+currentUser.cargo+')' : (registroAnterior?.atendidoPor||'-')) : (registroAnterior?.atendidoPor || ''),
+    criadoEm: currentEditId ? (registroAnterior?.criadoEm || new Date().toISOString()) : new Date().toISOString(),
     atualizadoEm: new Date().toISOString()
   };
 
+  const backupAnterior = registroAnterior ? JSON.parse(JSON.stringify(registroAnterior)) : null;
+  let idx = -1;
   if(currentEditId){
-    const idx = registros.findIndex(r=>r.id===currentEditId);
+    idx = registros.findIndex(r=>r.id===currentEditId);
     registros[idx] = reg;
   } else {
     registros.unshift(reg);
   }
-  save();
+
+  const ok = save();
+  if(!ok){
+    // Reverte a alteração em memória para não ficar dessincronizado do que foi realmente persistido
+    if(idx >= 0){ registros[idx] = backupAnterior; } else { registros.shift(); }
+    return;
+  }
 
   if(isNewTicket){
     sendWhatsAppNotify(reg, 'aberto');
@@ -811,7 +873,7 @@ async function shareWhatsAppReport(id){
 function statusLabel(s){ return {pendente:'Aberto',andamento:'Em andamento',concluida:'Concluída'}[s]||s; }
 function classLabel(c){
   return {
-    mal_uso:'⚠️ Mal uso', sem_avaria:'✅ Sem avaria', defeito_tecnico:'🔩 Defeito técnico',
+    mal_uso:'⚠️ Mal uso', sem_avaria:'✅ Sem avaria identificada', defeito_tecnico:'🔩 Defeito técnico',
     desgaste_natural:'⏳ Desgaste natural', garantia:'🛡️ Garantia'
   }[c] || '-';
 }
@@ -829,9 +891,9 @@ function renderList(){
   list.forEach(r=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="code-tag">${r.codigo||r.id}</span></td>
-      <td>${r.equipamento}${r.setor?'<br><small style="color:var(--muted)">'+r.setor+'</small>':''}</td>
-      <td>${r.solicitanteNome}</td>
+      <td><span class="code-tag">${escapeHtml(r.codigo||r.id)}</span></td>
+      <td>${escapeHtml(r.equipamento)}${r.setor?'<br><small style="color:var(--muted)">'+escapeHtml(r.setor)+'</small>':''}</td>
+      <td>${escapeHtml(r.solicitanteNome)}</td>
       <td>${fmtDate(r.data)}</td>
       <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
       <td>${r.classificacao?('<span class="badge '+r.classificacao+'">'+classLabel(r.classificacao)+'</span>'):'-'}</td>
@@ -852,9 +914,15 @@ function editReg(id){
   showView('new');
 }
 function deleteReg(id){
+  const reg = registros.find(r=>r.id===id);
+  if(reg && reg.status === 'concluida'){
+    alert('Este chamado já está concluído e assinado — é um registro de auditoria e não pode ser excluído pelo app.\n\nSe realmente precisar removê-lo, isso deve ser feito por um responsável com acesso técnico.');
+    return;
+  }
   if(!confirm('Excluir esta solicitação permanentemente?')) return;
+  const backup = registros;
   registros = registros.filter(r=>r.id!==id);
-  save();
+  if(!save()){ registros = backup; return; }
   renderList();
 }
 
@@ -874,21 +942,23 @@ function viewDetail(id){
     </div>
     <div class="grid2">
       <div>
-        <div class="kv"><b>Equipamento/Local</b>${r.equipamento}</div>
-        <div class="kv"><b>Nº de Patrimônio/Registro</b>${r.patrimonio||'-'}</div>
-        <div class="kv"><b>Setor</b>${r.setor||'-'}</div>
+        <div class="kv"><b>Equipamento/Local</b>${escapeHtml(r.equipamento)}</div>
+        <div class="kv"><b>Nº de Patrimônio/Registro</b>${escapeHtml(r.patrimonio)||'-'}</div>
+        <div class="kv"><b>Setor</b>${escapeHtml(r.setor)||'-'}</div>
         <div class="kv"><b>Data da solicitação</b>${fmtDate(r.data)}</div>
-        <div class="kv"><b>Prioridade</b>${r.prioridade}</div>
+        <div class="kv"><b>Prioridade</b>${escapeHtml(r.prioridade)}</div>
         <div class="kv"><b>Status</b><span class="badge ${r.status}">${statusLabel(r.status)}</span></div>
         <div class="kv"><b>Classificação</b>${r.classificacao?classLabel(r.classificacao):'-'}</div>
-        <div class="kv"><b>Descrição do problema</b>${r.descricao||'-'}</div>
+        <div class="kv"><b>Descrição do problema</b>${escapeHtml(r.descricao)||'-'}</div>
       </div>
       <div>
-        <div class="kv"><b>Solicitante</b>${r.solicitanteNome} ${r.solicitanteContato?'('+r.solicitanteContato+')':''}</div>
-        <div class="kv"><b>Responsável pela manutenção</b>${r.tecnicoNome||'-'}</div>
+        <div class="kv"><b>Solicitante</b>${escapeHtml(r.solicitanteNome)} ${r.solicitanteContato?'('+escapeHtml(r.solicitanteContato)+')':''}</div>
+        <div class="kv"><b>Responsável pela manutenção</b>${escapeHtml(r.tecnicoNome)||'-'}</div>
         <div class="kv"><b>Data de execução</b>${fmtDate(r.dataExecucao)}</div>
-        <div class="kv"><b>Serviço realizado</b>${r.servico||'-'}</div>
-        <div class="kv"><b>Materiais utilizados</b>${r.materiais||'-'}</div>
+        <div class="kv"><b>Serviço realizado</b>${escapeHtml(r.servico)||'-'}</div>
+        <div class="kv"><b>Materiais utilizados</b>${escapeHtml(r.materiais)||'-'}</div>
+        <div class="kv"><b>Aberto por (usuário logado)</b>${escapeHtml(r.abertoPor)||'-'}</div>
+        <div class="kv"><b>Atendido por (usuário logado)</b>${escapeHtml(r.atendidoPor)||'-'}</div>
       </div>
     </div>
     <h2>Fotos</h2>
@@ -1021,12 +1091,12 @@ function renderBanco(){
   list.forEach(r=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="code-tag">${r.codigo||r.id}</span></td>
+      <td><span class="code-tag">${escapeHtml(r.codigo||r.id)}</span></td>
       <td>${fmtDate(r.data)}</td>
-      <td>${r.equipamento}</td>
-      <td>${r.setor||'-'}</td>
-      <td>${r.solicitanteNome}</td>
-      <td>${r.tecnicoNome||'-'}</td>
+      <td>${escapeHtml(r.equipamento)}</td>
+      <td>${escapeHtml(r.setor)||'-'}</td>
+      <td>${escapeHtml(r.solicitanteNome)}</td>
+      <td>${escapeHtml(r.tecnicoNome)||'-'}</td>
       <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
       <td>${r.classificacao?('<span class="badge '+r.classificacao+'">'+classLabel(r.classificacao)+'</span>'):'-'}</td>
       <td class="actions-cell">
