@@ -819,14 +819,20 @@ document.getElementById('saveBtn').addEventListener('click', ()=>{
     return;
   }
 
-  if(isNewTicket){
-    sendWhatsAppNotify(reg, 'aberto');
-  } else if(reg.status === 'concluida' && statusAnterior !== 'concluida'){
-    shareWhatsAppReport(reg.id);
-  }
-
   showView('list');
   renderList();
+
+  // Abre o WhatsApp DEPOIS de já ter voltado para a lista, para que a confirmação
+  // visual não dependa da troca de app (que em alguns celulares atrasa o retorno).
+  try{
+    if(isNewTicket){
+      sendWhatsAppNotify(reg, 'aberto');
+    } else if(reg.status === 'concluida' && statusAnterior !== 'concluida'){
+      shareWhatsAppReport(reg.id);
+    }
+  }catch(e){
+    console.error('Falha ao abrir WhatsApp:', e);
+  }
 });
 
 // ---------- Notificação automática via WhatsApp (abertura de chamado — só texto) ----------
